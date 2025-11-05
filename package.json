@@ -1,0 +1,13 @@
+{
+  "name": "car-demo-in-car",
+  "version": "1.0.0", 
+  "description": "In-car systems for car demo system",
+  "private": true,
+  "scripts": {
+    "install-all": "cd C2-central-broker && npm install",
+    "start:broker": "cd C2-central-broker && npm start",
+    "dev:broker": "cd C2-central-broker && npm run dev",
+    "redis:start": "docker-compose up -d redis",
+    "redis:stop": "docker-compose down"
+  }
+}
