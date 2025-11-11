@@ -1,0 +1,54 @@
+code: C1
+name: cloud-communication
+
+description: |
+  Python asyncio-based cloud communication gateway for in-car systems.
+
+  Handles bidirectional communication between car systems and cloud services:
+  - Periodic sensor data upload to cloud (default 10s interval)
+  - Receives and forwards commands from cloud to car systems (B2)
+  - Maintains connection with retry logic and failure tracking
+  - Built-in mock cloud server for development and testing
+  - Status reporting and error handling
+
+  Features:
+  - Real-time data aggregation and transmission
+  - Bearer token authentication for cloud API
+  - Automatic retry with exponential backoff (max 5 failures)
+  - 30-second request timeout with graceful degradation
+  - Command relay to IoT Gateway (B2) via Redis pub/sub
+  - Optional command checking from B2
+  - Mock cloud server (port 8888) for demo purposes
+
+  Built with:
+  - Python 3 asyncio for non-blocking I/O
+  - aiohttp for async HTTP client
+  - Redis async client for message passing
+  - python-dotenv for configuration
+
+  API Integration:
+  - POST /api/car-data (cloud endpoint) - Send sensor data with optional commands
+  - POST /api/car-status (cloud endpoint) - Send status updates
+
+  Redis Integration:
+  - Read: car:{license_plate}:latest_data (from C2)
+  - Publish: car:{license_plate}:commands (to B2)
+  - Read (optional): car:{license_plate}:pending_commands (from B2)
+
+  Main files:
+  - cloud_communicator.py (main communication loop)
+  - test_c2_simulator.py (test helper for C2 data simulation)
+  - .env.example (configuration template)
+
+  Extra:
+  - Acts as cloud gateway for entire in-car system
+  - Decouples real-time car systems from external cloud services
+  - Configurable send interval and cloud endpoint for flexibility
+  - Mock cloud server useful for development without external dependencies
+
+
+linkingProjects:
+  - ../C2-central-broker
+  - ../../B-car-demo-backend/B2-iot-gateway
+
+extraInfo: []

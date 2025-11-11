@@ -1,0 +1,68 @@
+code: C2
+name: central-broker
+
+description: |
+  Redis-based central message broker for all in-car system communication.
+
+  Acts as the hub that aggregates sensor data and routes commands:
+  - Receives sensor data from C5 (indoor temp, outdoor temp, GPS)
+  - Aggregates sensor readings into comprehensive car snapshots
+  - Routes commands from backend systems (B2) to car systems
+  - Maintains command history for audit trail (max 100 per car)
+  - Provides REST API for data access and command injection
+  - Real-time data publishing to all subscribers
+
+  Features:
+  - Three separate Redis clients (pub, sub, storage) for safe operations
+  - Pattern subscriptions for dynamic car instances
+  - Data aggregation with 5-minute TTL on latest data
+  - REST API endpoints for sensors, commands, and car data
+  - Health check with Redis diagnostics
+  - CORS enabled for frontend access
+  - Graceful shutdown with proper cleanup
+
+  Built with:
+  - Node.js with Express.js REST framework
+  - Redis 4.6.0 for pub/sub and data storage
+  - CORS middleware for cross-origin requests
+  - dotenv for configuration
+  - Nodemon for development hot-reload
+  - Port: 3003
+
+  REST API Endpoints:
+  - GET /api/car/{licensePlate}/data - Latest aggregated car data
+  - GET /api/car/{licensePlate}/sensors/{sensorType} - Specific sensor
+  - POST /api/car/{licensePlate}/command - Inject command to car
+  - GET /api/car/{licensePlate}/commands - Command history
+  - GET /api/cars - All active cars
+  - GET /health - Health check with Redis info
+
+  Redis Pub/Sub Channels:
+  - Inbound: sensors:indoor_temp, sensors:outdoor_temp, sensors:gps (from C5)
+  - Inbound: car:*:commands (from B2, pattern match)
+  - Outbound: car:{licensePlate}:data (aggregated data)
+  - Outbound: car:{licensePlate}:active_commands (command relay)
+
+  Redis Data Keys:
+  - car:{licensePlate}:sensors (hash of sensor readings)
+  - car:{licensePlate}:latest_data (JSON aggregated data, 5-min TTL)
+  - car:{licensePlate}:command_history (list of last 100 commands)
+
+  Main files:
+  - server.js (main broker with Express API and Redis handlers)
+  - package.json (dependencies and scripts)
+  - docker-compose.yml (Redis service definition)
+
+  Extra:
+  - Central communication hub for entire in-car system
+  - Scalable design allows multiple broker instances with Redis cluster
+  - Real-time pub/sub enables reactive updates across all systems
+  - Command history valuable for debugging and auditing
+
+linkingProjects:
+  - ../C1-cloud-communication
+  - ../C5-data-sensors
+  - ../../B-car-demo-backend/B2-iot-gateway
+  - ../../A-car-demo-frontend
+
+extraInfo: []

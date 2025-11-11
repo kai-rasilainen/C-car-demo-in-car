@@ -1,0 +1,61 @@
+code: C5
+name: data-sensors
+
+description: |
+  Python-based sensor simulator generating realistic car sensor data.
+
+  Simulates multiple cars with concurrent sensor data streams:
+  - Indoor temperature with heating/cooling cycles (100ms interval)
+  - Outdoor temperature with daily cycles and seasonal variation (100ms interval)
+  - GPS location with realistic movement patterns (1 second interval)
+  - Multi-car support for concurrent vehicle simulation
+  - Realistic algorithms for natural data variation
+
+  Features:
+  - Concurrent sensor simulation using asyncio
+  - Configurable car list (default: ABC-123, XYZ-789, DEF-456)
+  - Configurable Redis URL for flexible deployment
+  - Indoor temp: ±2°C variation + sine-wave drift (18-25°C typical)
+  - Outdoor temp: Daily cycle (peak 2PM), weather trend, seasonal (5-20°C typical)
+  - GPS: Helsinki base location, ~500m movement radius
+  - Graceful shutdown with task cancellation
+  - Error handling with reconnection logic
+
+  Sensor Publishing:
+  - Channel: sensors:indoorTemp (100ms)
+  - Channel: sensors:outdoorTemp (100ms)
+  - Channel: sensors:gps (1000ms)
+  - Message format: {licensePlate, sensorType, value, timestamp, source}
+
+  Built with:
+  - Python 3 with asyncio for concurrent operations
+  - Redis async client for pub/sub publishing
+  - Math module for realistic simulation algorithms
+  - argparse for CLI configuration
+  - Random module for natural data variation
+
+  Command-line Options:
+  - --cars LICENSE_PLATE [LICENSE_PLATE ...] (default: ABC-123 XYZ-789 DEF-456)
+  - --redis-url REDIS_URL (default: redis://localhost:6379)
+
+  Usage Examples:
+  - python sensor_simulator.py
+  - python sensor_simulator.py --cars ABC-123 XYZ-789
+  - python sensor_simulator.py --redis-url redis://custom:6379
+
+  Main files:
+  - sensor_simulator.py (SensorSimulator and MultiCarSensorSimulator classes)
+  - requirements.txt (Redis dependency only)
+  - README.md (documentation with examples)
+
+  Extra:
+  - Pure data source for the system (no inbound communication)
+  - Can be replaced with real hardware sensor interfaces
+  - Useful for load testing and development without hardware
+  - Independent per car allows distributed sensor simulation
+  - Time-based tracking ensures consistent behavior across runs
+
+linkingProjects:
+  - ../C2-central-broker
+
+extraInfo: []
