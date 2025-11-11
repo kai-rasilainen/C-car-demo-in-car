@@ -1,10 +1,39 @@
 const redis = require('redis');
 const express = require('express');
 const cors = require('cors');
+const swaggerUi = require('swagger-ui-express');
+const swaggerJsdoc = require('swagger-jsdoc');
 require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3003;
+
+// Swagger configuration
+const swaggerOptions = {
+  definition: {
+    openapi: '3.0.0',
+    info: {
+      title: 'C2 Central Broker API',
+      version: '1.0.0',
+      description: 'In-car central broker managing Redis pub/sub communication between sensors and cloud',
+    },
+    servers: [
+      {
+        url: `http://localhost:${PORT}`,
+        description: 'Development server',
+      },
+    ],
+    tags: [
+      { name: 'Health', description: 'Service health checks' },
+      { name: 'Car Data', description: 'Car sensor data operations' },
+      { name: 'Commands', description: 'Car command operations' },
+    ],
+  },
+  apis: ['./server.js'],
+};
+
+const swaggerSpec = swaggerJsdoc(swaggerOptions);
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Middleware
 app.use(cors());
@@ -134,6 +163,50 @@ async function handleCarCommands(message, channel) {
 
 // REST API endpoints
 
+/**
+ * @swagger
+ * /api/car/{licensePlate}/data:
+ *   get:
+ *     summary: Get latest car data
+ *     description: Retrieves the most recent sensor data for a specific car from Redis
+ *     tags: [Car Data]
+ *     parameters:
+ *       - in: path
+ *         name: licensePlate
+ *         required: true
+ *         schema:
+ *           type: string
+ *           example: ABC-123
+ *         description: License plate number
+ *     responses:
+ *       200:
+ *         description: Latest car sensor data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 licensePlate:
+ *                   type: string
+ *                 indoorTemp:
+ *                   type: number
+ *                 outdoorTemp:
+ *                   type: number
+ *                 gps:
+ *                   type: object
+ *                   properties:
+ *                     lat:
+ *                       type: number
+ *                     lng:
+ *                       type: number
+ *                 timestamp:
+ *                   type: string
+ *                   format: date-time
+ *       404:
+ *         description: No data found for car
+ *       500:
+ *         description: Internal server error
+ */
 // Get latest data for a car
 app.get('/api/car/:licensePlate/data', async (req, res) => {
   try {
@@ -152,6 +225,47 @@ app.get('/api/car/:licensePlate/data', async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/car/{licensePlate}/sensors/{sensorType}:
+ *   get:
+ *     summary: Get specific sensor data
+ *     description: Retrieves data for a specific sensor type from Redis
+ *     tags: [Car Data]
+ *     parameters:
+ *       - in: path
+ *         name: licensePlate
+ *         required: true
+ *         schema:
+ *           type: string
+ *           example: ABC-123
+ *         description: License plate number
+ *       - in: path
+ *         name: sensorType
+ *         required: true
+ *         schema:
+ *           type: string
+ *           enum: [indoor_temp, outdoor_temp, gps]
+ *           example: indoor_temp
+ *         description: Type of sensor data to retrieve
+ *     responses:
+ *       200:
+ *         description: Sensor data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 value:
+ *                   type: number
+ *                 timestamp:
+ *                   type: string
+ *                   format: date-time
+ *       404:
+ *         description: Sensor data not found
+ *       500:
+ *         description: Internal server error
+ */
 // Get sensor history
 app.get('/api/car/:licensePlate/sensors/:sensorType', async (req, res) => {
   try {
@@ -170,6 +284,55 @@ app.get('/api/car/:licensePlate/sensors/:sensorType', async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/car/{licensePlate}/command:
+ *   post:
+ *     summary: Send command to car
+ *     description: Sends a command to a specific car via Redis pub/sub
+ *     tags: [Commands]
+ *     parameters:
+ *       - in: path
+ *         name: licensePlate
+ *         required: true
+ *         schema:
+ *           type: string
+ *           example: ABC-123
+ *         description: License plate number
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - command
+ *             properties:
+ *               command:
+ *                 type: string
+ *                 description: Command to send to the car
+ *                 example: unlock
+ *               parameters:
+ *                 type: object
+ *                 description: Optional command parameters
+ *                 example: {}
+ *     responses:
+ *       200:
+ *         description: Command sent successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 command:
+ *                   type: object
+ *       500:
+ *         description: Failed to send command
+ */
 // Send command to car
 app.post('/api/car/:licensePlate/command', async (req, res) => {
   try {
@@ -198,6 +361,55 @@ app.post('/api/car/:licensePlate/command', async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/car/{licensePlate}/commands:
+ *   get:
+ *     summary: Get command history
+ *     description: Retrieves command history for a specific car
+ *     tags: [Commands]
+ *     parameters:
+ *       - in: path
+ *         name: licensePlate
+ *         required: true
+ *         schema:
+ *           type: string
+ *           example: ABC-123
+ *         description: License plate number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *           example: 10
+ *         description: Maximum number of commands to return
+ *     responses:
+ *       200:
+ *         description: Command history
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   licensePlate:
+ *                     type: string
+ *                   command:
+ *                     type: string
+ *                   parameters:
+ *                     type: object
+ *                   timestamp:
+ *                     type: string
+ *                     format: date-time
+ *                   received_at:
+ *                     type: string
+ *                     format: date-time
+ *                   source:
+ *                     type: string
+ *       500:
+ *         description: Internal server error
+ */
 // Get command history
 app.get('/api/car/:licensePlate/commands', async (req, res) => {
   try {
@@ -216,6 +428,42 @@ app.get('/api/car/:licensePlate/commands', async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/cars:
+ *   get:
+ *     summary: Get all active cars
+ *     description: Retrieves latest data for all cars with stored data
+ *     tags: [Car Data]
+ *     responses:
+ *       200:
+ *         description: List of all active cars with their latest sensor data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   licensePlate:
+ *                     type: string
+ *                   indoorTemp:
+ *                     type: number
+ *                   outdoorTemp:
+ *                     type: number
+ *                   gps:
+ *                     type: object
+ *                     properties:
+ *                       lat:
+ *                         type: number
+ *                       lng:
+ *                         type: number
+ *                   timestamp:
+ *                     type: string
+ *                     format: date-time
+ *       500:
+ *         description: Internal server error
+ */
 // Get all active cars
 app.get('/api/cars', async (req, res) => {
   try {
@@ -236,6 +484,43 @@ app.get('/api/cars', async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /health:
+ *   get:
+ *     summary: Check service health
+ *     description: Returns health status of C2 Central Broker and Redis connection
+ *     tags: [Health]
+ *     responses:
+ *       200:
+ *         description: Service is healthy
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: healthy
+ *                 redis:
+ *                   type: string
+ *                   example: connected
+ *                 uptime:
+ *                   type: number
+ *                   description: Server uptime in seconds
+ *                 timestamp:
+ *                   type: string
+ *                   format: date-time
+ *                 redis_info:
+ *                   type: object
+ *                   properties:
+ *                     version:
+ *                       type: string
+ *                     connected_clients:
+ *                       type: string
+ *       500:
+ *         description: Service unhealthy
+ */
 // Health check
 app.get('/health', async (req, res) => {
   try {
