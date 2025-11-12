@@ -49,7 +49,7 @@ class C2DataSimulator:
             'engineStatus': random.choice(['running', 'idle', 'off']),
             'fuelLevel': random.randint(10, 100),
             'batteryVoltage': round(random.uniform(11.8, 14.4), 1),
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.now().isoformat()
         }
         
         return data
